@@ -127,20 +127,22 @@
         <div class="card">
             <h2>Sua Tag de Integração</h2>
             <p style="font-size: 14px; color: #8b949e;">Copie e cole este código no HTML do seu site onde deseja exibir os banners:</p>
-            <code id="ad-tag-code">&lt;script src="http://127.0.0.1:8000/static/ad_tag.js" data-publisher="1"&gt;&lt;/script&gt;</code>
+            <code id="ad-tag-code">&lt;script src="https://crypto-ad-network.onrender.com/static/ad_tag.js" data-publisher="1"&gt;&lt;/script&gt;</code>
         </div>
 
     </div>
 </div>
 
 <script>
+    const BASE_URL = 'https://crypto-ad-network.onrender.com';
+
     async function login() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const errorElement = document.getElementById('login-error');
 
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
+            const response = await fetch(`${BASE_URL}/api/v1/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email, password: password })
@@ -171,7 +173,7 @@
 
     async function loadDashboardData(token) {
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/v1/dashboard/stats', {
+            const response = await fetch(`${BASE_URL}/api/v1/dashboard/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -180,7 +182,7 @@
                 document.getElementById('pending-balance').innerText = `$${parseFloat(stats.pending_balance_usd || 0).toFixed(4)} USDT`;
                 document.getElementById('paid-balance').innerText = `$${parseFloat(stats.total_paid_usd || 0).toFixed(4)} USDT`;
                 document.getElementById('wallet-address').innerText = stats.polygon_wallet || 'Nenhuma carteira informada';
-                document.getElementById('ad-tag-code').innerText = `<script src="http://127.0.0.1:8000/static/ad_tag.js" data-publisher="${stats.publisher_id}"><\/script>`;
+                document.getElementById('ad-tag-code').innerText = `<script src="${BASE_URL}/static/ad_tag.js" data-publisher="${stats.publisher_id}"><\/script>`;
             }
         } catch (err) {
             console.error("Erro ao carregar dados do dashboard:", err);
