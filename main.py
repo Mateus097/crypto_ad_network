@@ -1,22 +1,22 @@
-import os
-from pathlib import Path
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
-load_dotenv()
+# Importações internas do projeto
+from database import engine, Base
+import models
+from routers import auth, adserver, dashboard
 
-from apps.adserver.router import router as adserver_router
-from routers.dashboard import router as dashboard_router
-from routers.auth import router as auth_router
+# 1. Cria todas as tabelas no PostgreSQL da nuvem automaticamente ao iniciar o servidor
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Crypto Ad Network API",
-    description="Plataforma de Monetização de Anúncios Web3 com Payouts via Polygon (USDT)",
+    description="API para Rede de Anúncios Web3/Crypto com pagamentos em stablecoins",
     version="1.0.0"
 )
 
+# 2. Configuração de CORS (Permite que sites externos consumam a ad_tag.js e o Painel)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,32 +25,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Define o caminho absoluto correto para a pasta 'static' no Windows
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
+# 3. Servir arquivos estáticos (ad_tag.js, publisher_dashboard.html, banners, etc)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-if not os.path.exists(STATIC_DIR):
-    os.makedirs(STATIC_DIR)
+# 4. Inclusão das Rotas do Sistema
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticação"])
+app.include_router(adserver.router, prefix="/api/v1/adserver", tags=["Ad Server"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-# Roteadores
-app.include_router(auth_router)
-app.include_router(adserver_router)
-app.include_router(dashboard_router)
-
-
-@app.get("/", tags=["Health Check"])
-def root():
+@app.get("/")
+def read_root():
     return {
         "status": "online",
-        "system": "Crypto Ad Network API",
-        "version": "1.0.0",
-        "blockchain": "Polygon Mainnet",
-        "payout_currency": "USDT"
+        "message": "Crypto Ad Network API rodando na nuvem Render!",
+        "docs_url": "/docs"
     }
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
