@@ -15,4 +15,4 @@ services:
 databases:
   - name: crypto-ad-db
     databaseName: crypto_ad_db
-    user: postgres
+    user: crypto_user
