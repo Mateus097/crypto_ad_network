@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Publisher - Crypto Ad Network</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #f0f6fc;
+            margin-top: 0;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .stat-box {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2f81f7;
+            margin-top: 8px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 16px 0;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #238636;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #2ea043;
+        }
+        code {
+            background-color: #0d1117;
+            padding: 12px;
+            border-radius: 6px;
+            display: block;
+            border: 1px solid #30363d;
+            color: #7ee787;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌐 Crypto Ad Network - Painel do Publisher</h1>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-section" class="card">
+        <h2>Entrar na sua Conta</h2>
+        <label for="email">E-mail</label>
+        <input type="email" id="email" placeholder="seuemail@exemplo.com">
+
+        <label for="password">Senha</label>
+        <input type="password" id="password" placeholder="••••••••">
+
+        <button onclick="login()">Acessar Painel</button>
+        <p id="login-error" style="color: #f85149; margin-top: 10px; display: none;"></p>
+    </div>
+
+    <!-- TELA DO DASHBOARD (Aparece após o Login) -->
+    <div id="dashboard-section" class="hidden">
+
+        <!-- RESUMO FINANCEIRO -->
+        <div class="card">
+            <h2>Visão Geral do Saldo</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div>Saldo Pendente</div>
+                    <div class="stat-value" id="pending-balance">$0.00 USDT</div>
+                </div>
+                <div class="stat-box">
+                    <div>Total Sacado</div>
+                    <div class="stat-value" id="paid-balance" style="color: #3fb950;">$0.00 USDT</div>
+                </div>
+            </div>
+            <p style="font-size: 13px; color: #8b949e; margin-top: 16px;">
+                <strong>Carteira Polygon Cadastrada:</strong> <br>
+                <span id="wallet-address" style="font-family: monospace; color: #f0f6fc;">Carregando...</span>
+            </p>
+        </div>
+
+        <!-- CÓDIGO DA TAG DO ANÚNCIO -->
+        <div class="card">
+            <h2>Sua Tag de Integração</h2>
+            <p style="font-size: 14px; color: #8b949e;">Copie e cole este código no HTML do seu site onde deseja exibir os banners:</p>
+            <code id="ad-tag-code">&lt;script src="http://127.0.0.1:8000/static/ad_tag.js" data-publisher="1"&gt;&lt;/script&gt;</code>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    async function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorElement = document.getElementById('login-error');
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.access_token) {
+                // Guarda o Token JWT no navegador
+                localStorage.setItem('token', data.access_token);
+                errorElement.style.display = 'none';
+
+                // Exibe o dashboard e oculta o formulário de login
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+
+                // Carrega os dados do saldo
+                loadDashboardData(data.access_token);
+            } else {
+                errorElement.innerText = data.detail || 'Falha no login. Verifique suas credenciais.';
+                errorElement.style.display = 'block';
+            }
+        } catch (err) {
+            errorElement.innerText = 'Erro ao conectar com o servidor.';
+            errorElement.style.display = 'block';
+        }
+    }
+
+    async function loadDashboardData(token) {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/v1/dashboard/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const stats = await response.json();
+                document.getElementById('pending-balance').innerText = `$${parseFloat(stats.pending_balance_usd || 0).toFixed(4)} USDT`;
+                document.getElementById('paid-balance').innerText = `$${parseFloat(stats.total_paid_usd || 0).toFixed(4)} USDT`;
+                document.getElementById('wallet-address').innerText = stats.polygon_wallet || 'Nenhuma carteira informada';
+                document.getElementById('ad-tag-code').innerText = `<script src="http://127.0.0.1:8000/static/ad_tag.js" data-publisher="${stats.publisher_id}"><\/script>`;
+            }
+        } catch (err) {
+            console.error("Erro ao carregar dados do dashboard:", err);
+        }
+    }
+</script>
+
+</body>
+</html>
