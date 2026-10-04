@@ -1,13 +1,17 @@
+import os
+import sys
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-# Importações internas do projeto
+# Adiciona o diretório atual ao caminho do Python para garantir que as importações funcionem na nuvem
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from database import engine, Base
 import models
 from routers import auth, adserver, dashboard
 
-# 1. Cria todas as tabelas no PostgreSQL da nuvem automaticamente ao iniciar o servidor
+# Cria todas as tabelas no PostgreSQL da nuvem automaticamente ao iniciar o servidor
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -16,7 +20,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# 2. Configuração de CORS (Permite que sites externos consumam a ad_tag.js e o Painel)
+# Configuração de CORS (Permite que sites externos consumam a ad_tag.js e o Painel)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,10 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 3. Servir arquivos estáticos (ad_tag.js, publisher_dashboard.html, banners, etc)
+# Servir arquivos estáticos (ad_tag.js, publisher_dashboard.html, banners, etc)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# 4. Inclusão das Rotas do Sistema
+# Inclusão das Rotas do Sistema
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Autenticação"])
 app.include_router(adserver.router, prefix="/api/v1/adserver", tags=["Ad Server"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
