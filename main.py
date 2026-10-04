@@ -4,11 +4,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-# Adiciona o diretório atual ao caminho do Python para garantir que as importações funcionem na nuvem
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Define o caminho raiz e garante que a pasta do projeto seja encontrada
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-from database import engine, Base
-import models
+# Importações limpas dos pacotes internos
+from ledger.database import engine, Base
+import ledger.models as models
 from routers import auth, adserver, dashboard
 
 # Cria todas as tabelas no PostgreSQL da nuvem automaticamente ao iniciar o servidor
@@ -20,7 +23,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configuração de CORS (Permite que sites externos consumam a ad_tag.js e o Painel)
+# Configuração de CORS (Permite que sites externos e o Painel consumam a API)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
